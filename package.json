@@ -1,0 +1,23 @@
+{
+  "name": "mesh-u5c-provider",
+  "version": "0.1.0",
+  "description": "An UTxO RPC provider for the Mesh transaction builder",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": [],
+  "author": "Gimbalabs",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.6.2"
+  },
+  "dependencies": {
+    "@blaze-cardano/core": "^0.4.5",
+    "@meshsdk/common": "^1.7.6",
+    "@meshsdk/core-csl": "^1.7.6",
+    "@utxorpc/sdk": "^0.6.1",
+    "@utxorpc/spec": "^0.10.1"
+  }
+}
