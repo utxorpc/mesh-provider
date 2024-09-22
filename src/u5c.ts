@@ -1,8 +1,9 @@
 import { CardanoQueryClient, CardanoSubmitClient } from "@utxorpc/sdk";
-import { AccountInfo, Action, Asset, AssetMetadata, BlockInfo, IEvaluator, IFetcher, IListener, ISubmitter, Protocol, TransactionInfo, UTxO } from "@meshsdk/common";
+import { AccountInfo, Action, Asset, AssetMetadata, BlockInfo, bytesToHex, castProtocol, IEvaluator, IFetcher, IListener, ISubmitter, Protocol, toBytes, TransactionInfo, UTxO } from "@meshsdk/common";
 import type * as spec from "@utxorpc/spec";
 import { toAddress } from "@meshsdk/core-csl";
-import { Address, HexBlob } from '@blaze-cardano/core';
+import { Address, fromHex, HexBlob, TransactionId } from '@blaze-cardano/core';
+import { submit } from "@utxorpc/spec";
 
 export class U5CProvider implements IFetcher, ISubmitter, IEvaluator, IListener {
     private queryClient: CardanoQueryClient;
@@ -25,15 +26,40 @@ export class U5CProvider implements IFetcher, ISubmitter, IEvaluator, IListener 
         headers,
       });
     }
-    onTxConfirmed(txHash: string, callback: () => void, limit?: number): void {
-        throw new Error("Method not implemented.");
+
+    onTxConfirmed(txHash: string, callback: () => void, limit = 100): void {
+        const onConfirmed = async () => {
+            const updates = this.submitClient.waitForTx(fromHex(txHash));
+    
+            for await (const stage of updates) {
+                console.log(JSON.stringify(updates))
+                if (stage === submit.Stage.CONFIRMED) {
+                    callback();
+                    return; // Exit once confirmed
+                }
+            }
+        };
+    
+        const timeoutId = setTimeout(() => {
+            // Handle timeout if necessary (e.g., log or notify)
+            console.log('Transaction confirmation timed out.');
+        }, limit * 5000);
+    
+        // Start listening for confirmations
+        onConfirmed().finally(() => clearTimeout(timeoutId)); // Clear timeout on completion
     }
+    
+
     evaluateTx(tx: string): Promise<Omit<Action, "data">[]> {
         throw new Error("Method not implemented.");
     }
-    submitTx(tx: string): Promise<string> {
-        throw new Error("Method not implemented.");
+
+    async submitTx(tx: string): Promise<string> {
+        const cbor = toBytes(tx);
+        const hash = await this.submitClient.submitTx(cbor);
+        return bytesToHex(hash);
     }
+
     fetchAccountInfo(address: string): Promise<AccountInfo> {
         throw new Error("Method not implemented.");
     }
@@ -79,9 +105,16 @@ export class U5CProvider implements IFetcher, ISubmitter, IEvaluator, IListener 
     fetchHandleAddress(handle: string): Promise<string> {
         throw new Error("Method not implemented.");
     }
-    fetchProtocolParameters(epoch: number): Promise<Protocol> {
-        throw new Error("Method not implemented.");
+
+    async fetchProtocolParameters(epoch: number): Promise<Protocol> {
+        const rpcPParams = await this.queryClient.readParams();
+        if (rpcPParams === undefined || rpcPParams === null) {
+          throw new Error(`Error fetching protocol parameters`);
+        }
+
+        return this._rpcPParamsToProtocol(rpcPParams);
     }
+    
     fetchTxInfo(hash: string): Promise<TransactionInfo> {
         throw new Error("Method not implemented.");
     }
@@ -91,6 +124,29 @@ export class U5CProvider implements IFetcher, ISubmitter, IEvaluator, IListener 
     get(url: string): Promise<any> {
         throw new Error("Method not implemented.");
     }
+
+    awaitTransactionConfirmation(
+        txId: string,
+        timeout?: number,
+      ): Promise<boolean> {
+        const onConfirmed = (async () => {
+          const updates = this.submitClient.waitForTx(fromHex(txId));
+    
+          for await (const stage of updates) {
+            if (stage == submit.Stage.CONFIRMED) {
+              return true;
+            }
+          }
+    
+          return false;
+        })();
+    
+        const onTimeout: Promise<boolean> = new Promise((resolve) =>
+          setTimeout(() => resolve(false), timeout),
+        );
+    
+        return Promise.race([onConfirmed, onTimeout]);
+      }
 
 
     private _rpcUtxoToMeshUtxo(rpcTxoRef: spec.query.TxoRef, rpcTxOutput: spec.cardano.TxOutput): UTxO {
@@ -147,5 +203,34 @@ export class U5CProvider implements IFetcher, ISubmitter, IEvaluator, IListener 
                     scriptHash: scriptHash
                 }
             }
+    }
+
+    private _rpcPParamsToProtocol(rpcPParams: spec.cardano.PParams): Protocol {
+        return castProtocol({
+            coinsPerUtxoSize: Number(rpcPParams.coinsPerUtxoByte),
+            collateralPercent: Number(rpcPParams.collateralPercentage),
+            decentralisation: 0, // Deprecated in Babbage era.
+            // epoch: ,
+            keyDeposit: Number(rpcPParams.stakeKeyDeposit),
+            maxBlockExMem:
+                Number(rpcPParams.maxExecutionUnitsPerBlock?.memory),
+            maxBlockExSteps:
+                Number(rpcPParams.maxExecutionUnitsPerBlock?.steps),
+            maxBlockHeaderSize: Number(rpcPParams.maxBlockHeaderSize),
+            maxBlockSize: Number(rpcPParams.maxBlockBodySize),
+            maxCollateralInputs: Number(rpcPParams.maxCollateralInputs),
+            maxTxExMem:
+                Number(rpcPParams.maxExecutionUnitsPerTransaction?.memory),
+            maxTxExSteps:
+                Number(rpcPParams.maxExecutionUnitsPerTransaction?.steps),
+            maxTxSize: Number(rpcPParams.maxTxSize),
+            maxValSize: Number(rpcPParams.maxValueSize),
+            minFeeA: Number(rpcPParams.minFeeCoefficient),
+            minFeeB: Number(rpcPParams.minFeeConstant),
+            minPoolCost: Number(rpcPParams.minPoolCost),
+            poolDeposit: Number(rpcPParams.poolDeposit),
+            priceMem: Number(rpcPParams.prices?.memory),
+            priceStep: Number(rpcPParams.prices?.steps),
+          });
     }
 }
