@@ -1,13 +1,7 @@
-## 💡 Basic Usage
-
-Below is an example of how to use the UTxO RPC provider with Mesh to build and submit a transaction.
-
-```javascript
 // Step #1
 // Import Mesh SDK and UTxO RPC provider
 import { Transaction, MeshWallet } from "@meshsdk/core";
-import { U5CProvider } from './u5c';
-
+import { U5CProvider } from "../src";
 
 async function main() {
 
@@ -60,4 +54,3 @@ async function main() {
 }
 
 main().catch(console.error);
-```
