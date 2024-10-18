@@ -1,6 +1,6 @@
 {
-  "name": "mesh-u5c-provider",
-  "version": "0.1.0",
+  "name": "@utxorpc/mesh-provider",
+  "version": "0.1.1",
   "description": "An UTxO RPC provider for the Mesh transaction builder",
   "main": "dist/index.js",
   "scripts": {
