@@ -1,6 +1,6 @@
 {
-  "name": "mesh-u5c-provider",
-  "version": "0.1.0",
+  "name": "@utxorpc/mesh-provider",
+  "version": "0.1.1",
   "description": "An UTxO RPC provider for the Mesh transaction builder",
   "main": "dist/index.js",
   "scripts": {
@@ -14,9 +14,9 @@
     "typescript": "^5.6.2"
   },
   "dependencies": {
-    "@meshsdk/common": "^1.7.6",
-    "@meshsdk/core-csl": "^1.7.6",
-    "@utxorpc/sdk": "^0.6.1",
+    "@meshsdk/common": "^1.7.9",
+    "@meshsdk/core-cst": "^1.7.9",
+    "@utxorpc/sdk": "^0.6.3",
     "@utxorpc/spec": "^0.10.1"
   }
 }
