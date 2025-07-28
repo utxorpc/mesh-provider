@@ -27,10 +27,12 @@ async function main() {
     });
 
     // Optional: Print the wallet address
-    console.log(wallet.getChangeAddress())
+    const walletAddress = await wallet.getChangeAddress();
+    console.log(walletAddress)
 
     // Optional: Print the wallet utxos
-    console.log(await provider.fetchAddressUTxOs(wallet.getChangeAddress()))
+    const utxos = await provider.fetchAddressUTxOs(walletAddress);
+    console.log("UTxOs found:", utxos.length);
 
     // Step #4
     // Create an example transaction that sends 5 ADA to an address
@@ -43,7 +45,7 @@ async function main() {
 
     // Step #5
     // Sign the transaction
-    const signedTx = wallet.signTx(unsignedTx);
+    const signedTx = await wallet.signTx(unsignedTx);
 
     // Step #6
     // Submit the transaction to the blockchain network

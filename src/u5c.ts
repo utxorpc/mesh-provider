@@ -10,9 +10,11 @@ import {
   BlockInfo,
   bytesToHex,
   castProtocol,
+  GovernanceProposalInfo,
   hexToBytes,
   IEvaluator,
   IFetcher,
+  IFetcherOptions,
   IListener,
   ISubmitter,
   Protocol,
@@ -20,7 +22,7 @@ import {
   TransactionInfo,
   UTxO,
 } from "@meshsdk/common";
-import { Address, CardanoSDKUtil } from "@meshsdk/core-cst";
+import { Address, HexBlob } from "@meshsdk/core-cst";
 
 export class U5CProvider
   implements IFetcher, ISubmitter, IEvaluator, IListener
@@ -82,8 +84,14 @@ export class U5CProvider
     throw new Error("Method not implemented.");
   }
 
+  fetchAddressTxs(address: string, options?: IFetcherOptions): Promise<TransactionInfo[]> {
+    throw new Error("Method not implemented.");
+  }
+
   async fetchAddressUTxOs(address: string, asset?: string): Promise<UTxO[]> {
-    const addressBytes = Buffer.from(Address.fromBech32(address).toBytes());
+    const addressObj = Address.fromBech32(address);
+    const addressHex = addressObj.toBytes(); // This returns a hex string
+    const addressBytes = Buffer.from(addressHex, 'hex'); // Convert hex string to bytes
 
     const utxoSearchResult = await this.queryClient.searchUtxosByAddress(
       addressBytes
@@ -131,6 +139,10 @@ export class U5CProvider
     throw new Error("Method not implemented.");
   }
   fetchHandleAddress(handle: string): Promise<string> {
+    throw new Error("Method not implemented.");
+  }
+
+  fetchGovernanceProposal(txHash: string, certIndex: number): Promise<GovernanceProposalInfo> {
     throw new Error("Method not implemented.");
   }
 
@@ -229,7 +241,7 @@ export class U5CProvider
       },
       output: {
         address: Address.fromBytes(
-          CardanoSDKUtil.HexBlob.fromBytes(rpcTxOutput.address)
+          HexBlob.fromBytes(rpcTxOutput.address)
         ).toBech32(),
         amount: amount,
         dataHash: dataHash,
